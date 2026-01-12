@@ -35,10 +35,7 @@ void* mem_func(void* args) {
 }
 
 void* io_func(void* args) {
-    int thread_id = *(int*)args;
-    char filename[50];
-    sprintf(filename, "try_thread_%d.txt", thread_id);
-    int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    int fd = open("try_thread.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd < 0) {
         perror("open");
         return NULL;
@@ -54,14 +51,8 @@ void* io_func(void* args) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        printf("Usage: %s <cpu|mem|io> <num_threads>\n", argv[0]);
-        return 1;
-    }
-
-    int num_threads = atoi(argv[2]);
-    if (num_threads < 1 || num_threads > 10) {
-        printf("Number of threads should be between 1 and 10\n");
+    if (argc != 2) {
+        printf("Usage: %s cpu|mem|io\n", argv[0]);
         return 1;
     }
 
@@ -69,31 +60,28 @@ int main(int argc, char* argv[]) {
     fflush(stdout);
     sleep(2);
 
-    pthread_t threads[num_threads];
-    int thread_ids[num_threads];
+    pthread_t t1, t2;
 
-    // Create threads
-    for (int i = 0; i < num_threads; i++) {
-        thread_ids[i] = i;
-        if (strcmp(argv[1], "cpu") == 0) {
-            pthread_create(&threads[i], NULL, cpu_func, NULL);
-        }
-        else if (strcmp(argv[1], "mem") == 0) {
-            pthread_create(&threads[i], NULL, mem_func, NULL);
-        }
-        else if (strcmp(argv[1], "io") == 0) {
-            pthread_create(&threads[i], NULL, io_func, &thread_ids[i]);
-        }
-        else {
-            printf("Invalid argument. Use cpu, mem, or io\n");
-            return 1;
-        }
+    if (strcmp(argv[1], "cpu") == 0) {
+        pthread_create(&t1, NULL, cpu_func, NULL);
+        pthread_create(&t2, NULL, cpu_func, NULL);
+    }
+    else if (strcmp(argv[1], "mem") == 0) {
+        pthread_create(&t1, NULL, mem_func, NULL);
+        pthread_create(&t2, NULL, mem_func, NULL);
+    }
+    else if (strcmp(argv[1], "io") == 0) {
+        pthread_create(&t1, NULL, io_func, NULL);
+        pthread_create(&t2, NULL, io_func, NULL);
+    }
+    else {
+        printf("Invalid argument. Use cpu, mem, or io\n");
+        return 1;
     }
 
-    // Wait for all threads
-    for (int i = 0; i < num_threads; i++) {
-        pthread_join(threads[i], NULL);
-    }
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
     
     return 0;
 }
+

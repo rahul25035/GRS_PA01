@@ -33,9 +33,7 @@ void mem_func() {
 }
 
 void io_func() {
-    char filename[50];
-    sprintf(filename, "try_%d.txt", getpid());
-    int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    int fd = open("try.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd < 0) {
         perror("open");
         exit(1);
@@ -50,14 +48,8 @@ void io_func() {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        printf("Usage: %s <cpu|mem|io> <num_processes>\n", argv[0]);
-        return 1;
-    }
-
-    int num_procs = atoi(argv[2]);
-    if (num_procs < 1 || num_procs > 10) {
-        printf("Number of processes should be between 1 and 10\n");
+    if (argc != 2) {
+        printf("Usage: %s cpu|mem|io\n", argv[0]);
         return 1;
     }
 
@@ -67,32 +59,49 @@ int main(int argc, char* argv[]) {
     
     sleep(1);  // Give script time to see parent PID
 
-    // Create specified number of child processes
-    for (int i = 0; i < num_procs; i++) {
-        pid_t pid = fork();
-        if (pid < 0) {
-            perror("fork");
-            return 1;
-        }
+    // Create first child
+    pid_t pid1 = fork();
+    if (pid1 < 0) {
+        perror("fork");
+        return 1;
+    }
+    
+    if (pid1 == 0) {
+        // Child 1
+        printf("CHILD_PID: %d\n", getpid());
+        fflush(stdout);
+        sleep(1);  // Ensure script captures PID
         
-        if (pid == 0) {
-            // Child process
-            printf("CHILD_PID: %d\n", getpid());
-            fflush(stdout);
-            sleep(1);  // Ensure script captures PID
-            
-            if (strcmp(argv[1], "cpu") == 0) cpu_func();
-            else if (strcmp(argv[1], "mem") == 0) mem_func();
-            else if (strcmp(argv[1], "io") == 0) io_func();
-            
-            exit(0);
-        }
+        if (strcmp(argv[1], "cpu") == 0) cpu_func();
+        else if (strcmp(argv[1], "mem") == 0) mem_func();
+        else if (strcmp(argv[1], "io") == 0) io_func();
+        
+        exit(0);
     }
 
-    // Parent waits for all children
-    for (int i = 0; i < num_procs; i++) {
-        wait(NULL);
+    // Create second child
+    pid_t pid2 = fork();
+    if (pid2 < 0) {
+        perror("fork");
+        return 1;
     }
+    
+    if (pid2 == 0) {
+        // Child 2
+        printf("CHILD_PID: %d\n", getpid());
+        fflush(stdout);
+        sleep(1);  // Ensure script captures PID
+        
+        if (strcmp(argv[1], "cpu") == 0) cpu_func();
+        else if (strcmp(argv[1], "mem") == 0) mem_func();
+        else if (strcmp(argv[1], "io") == 0) io_func();
+        
+        exit(0);
+    }
+
+    // Parent waits for both children
+    wait(NULL);
+    wait(NULL);
     
     return 0;
 }
