@@ -1,91 +1,107 @@
+#main.sh
 #!/bin/bash
+# set -e
+
+rm -f a.out b.out try_thread.txt try_proc.txt results.csv
+sleep 1
 
 echo "Compiling programs..."
 gcc A.c -o a.out
 gcc B.c -o b.out -pthread
+echo "Compilation done"
+echo "=================================="
 
-echo -e "Program+Function\tAvgCPU(%)\tAvgMem(KB)\tIO_wkB/s\tTime(s)"
-echo "----------------------------------------------------------------------"
+# Require GNU time
+if ! command -v /usr/bin/time >/dev/null 2>&1; then
+    echo "Error: /usr/bin/time (GNU time) not found."
+    exit 1
+fi
+
+# Create CSV and header
+CSV_FILE="results.csv"
+echo "components,program,function,cpu_percent,mem_mb,io_kbps,time_sec" > "$CSV_FILE"
 
 measure() {
-    NAME=$1
-    CMD=$2
-    
-    rm -f try.txt try_thread.txt
+    TYPE=$1
+    MODE=$2
+    NOP=$3
 
-    # Start the program in background
-    $CMD &
-    MAIN_PID=$!
+    if [ "$TYPE" = "process" ]; then
+        EXE="./a.out"
+        prog="A"
+    else
+        EXE="./b.out"
+        prog="B"
+    fi
 
-    echo "Monitoring PID: $MAIN_PID" >&2
+    exe_name=$(basename "$EXE")
 
-    START_TIME=$(date +%s)
+    time_file=$(mktemp)
 
-    TMP_SAMPLES="/tmp/samples_$$"
-    > "$TMP_SAMPLES"
+    taskset -c 0,1 /usr/bin/time -f "%e" "$EXE" "$MODE" "$NOP" 2> "$time_file" &
+    PID=$!
 
-    # Loop while the main process exists. Sample every 0.5s
-    while kill -0 "$MAIN_PID" 2>/dev/null; do
-        # Build list of parent + direct children
-        CHILD_PIDS=$(ps --no-headers -o pid --ppid "$MAIN_PID" 2>/dev/null | awk '{printf ","$1}')
-        PID_LIST=$(echo "$MAIN_PID$CHILD_PIDS" | sed 's/^,//')
+    sum_cpu=0
+    sum_mem=0
+    sum_io=0
+    count=0
 
-        if [ -n "$PID_LIST" ]; then
-            # ps: for these PIDs, sum %CPU and RSS (KB)
-            read SAMPLE_CPU SAMPLE_MEM <<< $(ps -p "$PID_LIST" -o %cpu= -o rss= 2>/dev/null | \
-                awk '{cpu+=$1; mem+=$2} END { if (cpu=="") cpu=0; if(mem=="") mem=0; printf "%.2f %.0f", cpu, mem }')
-        else
-            SAMPLE_CPU="0.00"
-            SAMPLE_MEM="0"
-        fi
+    while kill -0 "$PID" 2>/dev/null; do
+        cpu=$(top -b -H -n 1 | awk -v exe="$exe_name" '$0 ~ exe {c+=$9} END {print c}')
+        cpu=${cpu:-0}
 
-        echo "$SAMPLE_CPU $SAMPLE_MEM" >> "$TMP_SAMPLES"
-        sleep 0.5
+        mem=$(top -b -n 1 | awk -v exe="$exe_name" '$0 ~ exe {m+=$6} END {print m}')
+        mem=${mem:-0}
+
+        io=$(iostat -dx 1 1 | awk '$1=="sda" {print $9}')
+        io=${io:-0}
+
+        sum_cpu=$(awk -v s="$sum_cpu" -v c="$cpu" 'BEGIN{print s + c}')
+        sum_mem=$(awk -v s="$sum_mem" -v m="$mem" 'BEGIN{print s + m}')
+        sum_io=$(awk -v s="$sum_io" -v i="$io"  'BEGIN{print s + i}')
+
+        count=$((count + 1))
+        sleep 1
     done
 
-    END_TIME=$(date +%s)
-    ELAPSED=$((END_TIME - START_TIME))
-    if [ $ELAPSED -eq 0 ]; then
-        ELAPSED=1
-    fi
+    wait "$PID"
 
-    # Compute averages from samples
-    if [ -s "$TMP_SAMPLES" ]; then
-        read CPU_AVG MEM_AVG <<< $(awk '{cpu+=$1; mem+=$2; count++} END { if(count>0) printf "%.2f %.2f", cpu/count, mem/count; else printf "0.00 0.00"}' "$TMP_SAMPLES")
-    else
-        CPU_AVG="0.00"
-        MEM_AVG="0.00"
-    fi
+    elapsed_raw=$(cat "$time_file")
+    rm -f "$time_file"
 
-    # Measure IO by file size (either try.txt or try_thread.txt)
-    IO_BYTES=0
-    if [ -f try.txt ]; then
-        IO_BYTES=$(stat -c "%s" try.txt 2>/dev/null || stat -f "%z" try.txt 2>/dev/null || echo 0)
-    elif [ -f try_thread.txt ]; then
-        IO_BYTES=$(stat -c "%s" try_thread.txt 2>/dev/null || stat -f "%z" try_thread.txt 2>/dev/null || echo 0)
-    fi
+    avg_cpu=$(awk -v s="$sum_cpu" -v n="$count" 'BEGIN{if(n>0) printf "%.2f", s/n; else print 0}')
+    avg_mem_kb=$(awk -v s="$sum_mem" -v n="$count" 'BEGIN{if(n>0) print s/n; else print 0}')
+    avg_mem_mb=$(awk -v m="$avg_mem_kb" 'BEGIN{printf "%.2f", m/1024}')
+    avg_io=$(awk -v s="$sum_io" -v n="$count" 'BEGIN{if(n>0) printf "%.2f", s/n; else print 0}')
+    elapsed=$(awk -v e="$elapsed_raw" 'BEGIN{printf "%.3f", e}')
 
-    IO_RATE=$((IO_BYTES / ELAPSED / 1024))
+    # Terminal output
+    printf "%-6s %-8s %-9s %-10s %-8s\n" \
+    "$prog+$MODE" \
+    "$avg_cpu" \
+    "${avg_mem_mb}MB" \
+    "$avg_io" \
+    "$elapsed"
 
-    # Cleanup
-    rm -f "$TMP_SAMPLES"
-
-    printf "%s\t%.2f\t\t%.2f\t\t%d\t\t%d\n" "$NAME" "$CPU_AVG" "$MEM_AVG" "$IO_RATE" "$ELAPSED"
+    # CSV output (no units)
+    echo "$NOP,$prog,$MODE,$avg_cpu,$avg_mem_mb,$avg_io,$elapsed" >> "$CSV_FILE"
 }
 
-measure "A+CPU" "taskset -c 0 ./a.out cpu"
-measure "A+MEM" "taskset -c 0 ./a.out mem"
-measure "A+IO"  "taskset -c 0 ./a.out io"
-measure "B+CPU" "taskset -c 0 ./b.out cpu"
-measure "B+MEM" "taskset -c 0 ./b.out mem"
-measure "B+IO"  "taskset -c 0 ./b.out io"
+# ================= MAIN LOOP =================
 
-rm -f try.txt try_thread.txt
+for c in 2 3 4 5 6
+do
+    echo
+    echo "components=$c"
+    printf "%-6s %-8s %-9s %-10s %-8s\n" "Prog" "CPU%" "Mem" "IO" "Time(s)"
+    echo "------------------------------------------------------"
 
-echo ""
-echo "Analysis:"
-echo "- CPU-intensive programs should show high CPU% (near 100% per busy core)."
-echo "- Memory-intensive programs should show high memory (RSS in KB)."
-echo "- IO-intensive programs should show file write bytes / second (approx)."
-echo "- Threads (B) share the same process so we monitor the single PID."
-echo "- Processes (A) spawn children — we now monitor parent + its children."
+    for m in cpu mem io
+    do
+        measure process $m $c
+        measure thread  $m $c
+    done
+done
+
+echo
+echo "Results saved to $CSV_FILE"
