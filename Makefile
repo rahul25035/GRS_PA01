@@ -26,4 +26,4 @@ partD:
 run: partD
 
 clean:
-	rm -f a.out b.out try_proc.txt try_thread.txt *.csv *.png *.dat
+	rm -f a.out b.out try_proc.txt try_thread.txt *.png *.dat
