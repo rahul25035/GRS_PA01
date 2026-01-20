@@ -1,4 +1,4 @@
-#main.sh
+#MT25035_PartD_main.sh
 #!/bin/bash
 # set -e
 
@@ -6,8 +6,8 @@ rm -f a.out b.out try_thread.txt try_proc.txt results.csv
 sleep 1
 
 echo "Compiling programs..."
-gcc A.c -o a.out
-gcc B.c -o b.out -pthread
+gcc MT25035_PartD_A.c -o a.out
+gcc MT25035_PartD_B.c -o b.out -pthread
 echo "Compilation done"
 echo "=================================="
 
@@ -18,7 +18,7 @@ if ! command -v /usr/bin/time >/dev/null 2>&1; then
 fi
 
 # Create CSV and header
-CSV_FILE="results.csv"
+CSV_FILE="MT25035_PartD_results.csv"
 echo "components,program,function,cpu_percent,mem_mb,io_kbps,time_sec" > "$CSV_FILE"
 
 measure() {

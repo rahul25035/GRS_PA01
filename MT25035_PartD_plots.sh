@@ -1,5 +1,4 @@
-
-#plots.sh
+#MT25035_PartD_plots.sh
 #!/bin/bash
 
 CSV="results.csv"
