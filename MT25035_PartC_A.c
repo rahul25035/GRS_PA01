@@ -1,4 +1,4 @@
-/* MT25035_PartB_A.c */
+/* MT25035_PartC_A.c */
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
