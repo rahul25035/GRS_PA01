@@ -19,7 +19,7 @@ This repository contains code, scripts and results for an experiment that compar
 * `MT25035_PartC_results.csv` — results produced by Part C runs
 * `MT25035_PartD_A.c`         — part D source code
 * `MT25035_PartD_B.c`         — part D source code
-* `MT25035_PartD_Report.pdf`  — final report (PDF)
+* `MT25035_Report.pdf`        — final report (PDF)
 * `MT25035_PartD_main.sh`     — automation script for Part D (must be executable)
 * `MT25035_PartD_plots.sh`    — script to generate plots (gnuplot or similar)
 * `MT25035_PartD_results.csv` — results produced by Part D runs
