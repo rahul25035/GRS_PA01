@@ -1,132 +1,149 @@
-# Process vs Thread Performance Analysis in C
+# Process vs Thread Performance Analysis in C (MT25035)
 
-## Overview
+**Short description**
 
-This assignment studies the performance characteristics of **processes** and **threads** under different workload types using the C programming language. Two programs are implemented:
+This repository contains code, scripts and results for an experiment that compares the behaviour and performance of **process-based** and **thread-based** parallelism across different workload types (CPU / memory / I/O).
 
-* **Program A**: Uses `fork()` to create multiple processes
-* **Program B**: Uses `pthread` to create multiple threads
-
-Each program executes one of three worker functions:
-
-* **CPU-intensive**
-* **Memory-intensive**
-* **I/O-intensive**
-
-System behavior is observed using standard Linux tools such as `top`, `iostat`, `time`, and `taskset`.
+> This `README.md` was updated to match the `Makefile` and files in the repository (as shown in the project screenshot).
 
 ---
 
-## Files in the Repository
+## Repository files (present)
 
+* `MT25035_PartA_A.c`         — program using **fork()** (process-based)
+* `MT25035_PartA_B.c`         — program using **pthreads** (thread-based)
+* `MT25035_PartB_A.c`         — (other version / experiments; keep as-is)
+* `MT25035_PartC_A.c`         — part C source code
+* `MT25035_PartC_B.c`         — part C source code (alternate)
+* `MT25035_PartC_main.sh`     — automation script for Part C (must be executable)
+* `MT25035_PartC_results.csv` — results produced by Part C runs
+* `MT25035_PartD_A.c`         — part D source code
+* `MT25035_PartD_B.c`         — part D source code
+* `MT25035_PartD_Report.pdf`  — final report (PDF)
+* `MT25035_PartD_main.sh`     — automation script for Part D (must be executable)
+* `MT25035_PartD_plots.sh`    — script to generate plots (gnuplot or similar)
+* `MT25035_PartD_results.csv` — results produced by Part D runs
+* `Makefile`                  — build & automation rules (use `make`)
+* `README.md`                 — this file
+* `report.docx`               — editable report (Word)
+
+> If you add or rename files, update the Makefile accordingly.
+
+---
+
+## Makefile summary
+
+The `Makefile` included in the repo defines these variables and targets (matching the file content):
+
+```makefile
+CC=gcc
+CFLAGS=-Wall
+PTHREAD=-pthread
+
+MODE?=cpu    # default workload: cpu (options: cpu, mem, io)
+N?=2         # default number of workers (processes/threads)
+
+.PHONY: partA partB partC partD run clean
 ```
-.
-├── A.c          # Process-based program using fork()
-├── B.c          # Thread-based program using pthreads
-├── main.sh      # Automates execution and metric collection
-├── plots.sh     # Generates performance plots using gnuplot
-├── Makefile     # Build and automation rules
-├── results.csv  # Generated performance metrics (after run)
-└── README.md
-```
+
+Targets:
+
+* `make partA` — compiles `MT25035_PartA_A.c` and runs it with `MODE` and `N`:
+
+  ```bash
+  make partA            # runs ./a.out $(MODE) $(N)
+  make partA MODE=mem N=4
+  ```
+
+* `make partB` — compiles `MT25035_PartA_B.c` with pthreads and runs it:
+
+  ```bash
+  make partB            # runs ./b.out $(MODE) $(N)
+  make partB MODE=io N=8
+  ```
+
+* `make partC` — makes the Part C script executable and runs `MT25035_PartC_main.sh`.
+
+* `make partD` — makes the Part D script executable and runs `MT25035_PartD_main.sh`.
+
+* `make run` — alias target which currently depends on `partD`.
+
+* `make clean` — removes generated binaries and data files:
+
+  ```bash
+  make clean
+  # removes: a.out b.out try_proc.txt try_thread.txt *.png *.dat
+  ```
 
 ---
 
-## Workload Description
+## How to build & run (example commands)
 
-Each worker function runs a loop with a fixed iteration count (`ITER = 5000`), representing a scaled workload.
-
-### 1. CPU-intensive (`cpu`)
-
-Performs nested arithmetic loops that keep the CPU busy with minimal memory or I/O interaction.
-
-### 2. Memory-intensive (`mem`)
-
-Allocates a large memory buffer (256 MB) and repeatedly touches memory pages, stressing the memory subsystem.
-
-### 3. I/O-intensive (`io`)
-
-Performs repeated disk writes followed by `fsync()`, forcing synchronous disk I/O.
-
-The same worker logic is shared between process-based and thread-based implementations.
-
----
-
-## Compilation
-
-Compile both programs using:
+1. Build & run Part A (processes):
 
 ```bash
-make
+make partA           # uses defaults: MODE=cpu, N=2
+# override defaults:
+make partA MODE=cpu N=4
+make partA MODE=mem N=8
 ```
 
-This generates:
+2. Build & run Part B (threads):
 
-* `a.out` (process-based program)
-* `b.out` (thread-based program)
+```bash
+make partB
+make partB MODE=io N=6
+```
 
----
+3. Run automation scripts for Part C / Part D:
 
-## Running Experiments
+```bash
+make partC
+make partD
+```
 
-To run all experiments automatically:
+4. Run the full experiment (as configured in Makefile):
 
 ```bash
 make run
 ```
 
-This performs:
-
-* Execution of all program + workload combinations
-* CPU pinning using `taskset`
-* Periodic sampling of:
-
-  * CPU usage (`top`)
-  * Memory usage (`top`)
-  * Disk I/O statistics (`iostat`)
-* Execution time measurement using GNU `time`
-
-Results are saved to `results.csv`.
+> **Note:** The scripts `MT25035_PartC_main.sh` and `MT25035_PartD_main.sh` should already include environment-specific commands such as `taskset`, `/usr/bin/time`, `iostat`, `top` sampling. Ensure you have the required tools installed.
 
 ---
 
-## Plot Generation
+## Expected outputs
 
-To generate plots from the collected data:
-
-```bash
-make plots
-```
-
-This creates graphs such as:
-
-* Execution time vs number of components
-* CPU utilization vs number of components
-* Memory usage vs number of components
-
-Plots are generated using **gnuplot** and saved as `.png` files.
+* Binaries: `a.out` (Part A) and `b.out` (Part B)
+* CSV results: `MT25035_PartC_results.csv`, `MT25035_PartD_results.csv`
+* Plots: generated by `MT25035_PartD_plots.sh` (e.g. `*.png`)
+* Temporary logs: `try_proc.txt`, `try_thread.txt` (removed by `make clean`)
 
 ---
 
-## Cleanup
+## Running tips and environment
 
-To remove all generated binaries, data files, and plots:
-
-```bash
-make clean
-```
-
----
-
-## Experimental Setup Notes
-
-* Programs are pinned to specific CPU cores using `taskset` to ensure controlled CPU scheduling.
-* CPU, memory, and I/O statistics are sampled once per second and averaged over execution time.
-* The number of processes and threads is varied to study scalability effects.
-* All measurements are automated via shell scripts for reproducibility.
+* Pin processes/threads to CPUs for controlled experiments using `taskset`.
+* Use `/usr/bin/time -v` for detailed timing and memory stats (some scripts assume `/usr/bin/time`).
+* Install `sysstat` for `iostat` and ensure `gnupplot` or the plot tool used by scripts is available for plotting.
+* If a script fails with "`/usr/bin/time not found`", either install `time` or change the script to use the `time` builtin.
 
 ---
 
-## Conclusion
+## Reproducibility
 
-This assignment demonstrates how workload type significantly influences system performance and scalability, and highlights the practical differences between process-based and thread-based parallelism on a Linux system.
+* All runs are automated via `MT25035_PartC_main.sh` and `MT25035_PartD_main.sh`. Review those scripts to control sampling frequency, CPU pinning, and the values of `N` used.
+
+---
+
+## Contact / Notes
+
+If you want, I can:
+
+* update the run-scripts to produce a consistent `results.csv` format,
+* add a `README` section that documents the exact CSV column headers the scripts produce,
+* or produce an example `make` command series to reproduce the figures in `MT25035_PartD_plots.sh`.
+
+---
+
+*End of README*
