@@ -135,15 +135,3 @@ make run
 * All runs are automated via `MT25035_PartC_main.sh` and `MT25035_PartD_main.sh`. Review those scripts to control sampling frequency, CPU pinning, and the values of `N` used.
 
 ---
-
-## Contact / Notes
-
-If you want, I can:
-
-* update the run-scripts to produce a consistent `results.csv` format,
-* add a `README` section that documents the exact CSV column headers the scripts produce,
-* or produce an example `make` command series to reproduce the figures in `MT25035_PartD_plots.sh`.
-
----
-
-*End of README*
