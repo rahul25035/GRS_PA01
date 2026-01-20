@@ -9,10 +9,14 @@ N?=2
 
 partA:
 	$(CC) $(CFLAGS) MT25035_PartA_A.c -o a.out
+	$(CC) $(CFLAGS) MT25035_PartA_B.c -o b.out $(PTHREAD)
 	./a.out $(MODE) $(N)
+	./b.out $(MODE) $(N)
 
 partB:
-	$(CC) $(CFLAGS) MT25035_PartA_B.c -o b.out $(PTHREAD)
+	$(CC) $(CFLAGS) MT25035_PartB_A.c -o a.out $(PTHREAD)
+	$(CC) $(CFLAGS) MT25035_PartB_B.c -o b.out $(PTHREAD)
+	./a.out $(MODE) $(N)
 	./b.out $(MODE) $(N)
 
 partC:
