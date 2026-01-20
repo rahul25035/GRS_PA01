@@ -1,7 +1,7 @@
 #MT25035_PartD_plots.sh
 #!/bin/bash
 
-CSV="results.csv"
+CSV="MT25035_PartD_results.csv"
 
 if [ ! -f "$CSV" ]; then
     echo "Error: $CSV not found. Run main.sh first."

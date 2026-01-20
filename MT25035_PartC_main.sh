@@ -2,8 +2,8 @@
 # MT25035_PartC_main.sh
 
 rm -f a.out b.out try_thread.txt try_proc.txt MT25035_PartC_results.csv
-gcc MT25035_PartB_A.c -o a.out
-gcc MT25035_PartB_B.c -o b.out -pthread
+gcc MT25035_PartC_A.c -o a.out
+gcc MT25035_PartC_B.c -o b.out -pthread
 
 if ! command -v /usr/bin/time >/dev/null 2>&1; then
   echo "/usr/bin/time not found"; exit 1

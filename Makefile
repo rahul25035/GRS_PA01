@@ -1,34 +1,29 @@
-# Makefile for Process vs Thread Performance Assignment
+CC=gcc
+CFLAGS=-Wall
+PTHREAD=-pthread
 
-CC = gcc
-CFLAGS = -Wall
-PTHREAD = -pthread
+MODE?=cpu
+N?=2
 
-A_OUT = a.out
-B_OUT = b.out
+.PHONY: partA partB partC partD run clean
 
-.PHONY: all clean run plots
+partA:
+	$(CC) $(CFLAGS) MT25035_PartA_A.c -o a.out
+	./a.out $(MODE) $(N)
 
-# Default target
-all: $(A_OUT) $(B_OUT)
+partB:
+	$(CC) $(CFLAGS) MT25035_PartA_B.c -o b.out $(PTHREAD)
+	./b.out $(MODE) $(N)
 
-# Compile Program A (process-based)
-$(A_OUT): MT25035_PartD_A.c
-	$(CC) $(CFLAGS) MT25035_PartD_A.c -o $(A_OUT)
+partC:
+	chmod +x MT25035_PartC_main.sh
+	./MT25035_PartC_main.sh
 
-# Compile Program B (thread-based)
-$(B_OUT): MT25035_PartD_B.c
-	$(CC) $(CFLAGS) MT25035_PartD_B.c -o $(B_OUT) $(PTHREAD)
-# Run the full experiment (calls main.sh)
-run: all
+partD:
 	chmod +x MT25035_PartD_main.sh
 	./MT25035_PartD_main.sh
 
-# Generate plots (calls plots.sh)
-plots:
-	chmod +x MT25035_PartD_plots.sh
-	./MT25035_PartD_plots.sh
+run: partD
 
-# Clean generated files
 clean:
-	rm -f $(A_OUT) $(B_OUT) results.csv *.dat *.png try_proc.txt try_thread.txt
+	rm -f a.out b.out try_proc.txt try_thread.txt *.csv *.png *.dat

@@ -105,3 +105,6 @@ done
 
 echo
 echo "Results saved to $CSV_FILE"
+echo "Making Plots..."
+bash ./MT25035_PartD_plots.sh
+rm -f a.out b.out try_thread.txt try_proc.txt *.dat
