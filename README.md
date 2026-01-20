@@ -130,8 +130,3 @@ make run
 
 ---
 
-## Reproducibility
-
-* All runs are automated via `MT25035_PartC_main.sh` and `MT25035_PartD_main.sh`. Review those scripts to control sampling frequency, CPU pinning, and the values of `N` used.
-
----
