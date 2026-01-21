@@ -12,12 +12,14 @@ partA:
 	$(CC) $(CFLAGS) MT25035_PartA_B.c -o b.out $(PTHREAD)
 	./a.out $(MODE) $(N)
 	./b.out $(MODE) $(N)
+	rm -f a.out b.out
 
 partB:
 	$(CC) $(CFLAGS) MT25035_PartB_A.c -o a.out $(PTHREAD)
 	$(CC) $(CFLAGS) MT25035_PartB_B.c -o b.out $(PTHREAD)
 	./a.out $(MODE) $(N)
 	./b.out $(MODE) $(N)
+	rm -f a.out b.out
 
 partC:
 	chmod +x MT25035_PartC_main.sh
@@ -30,4 +32,4 @@ partD:
 run: partD
 
 clean:
-	rm -f a.out b.out try_proc.txt try_thread.txt *.png *.dat
+	rm -f a.out b.out try_proc.txt try_thread.txt *.png *.dat *.csv

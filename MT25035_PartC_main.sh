@@ -2,8 +2,12 @@
 # MT25035_PartC_main.sh
 
 rm -f a.out b.out try_thread.txt try_proc.txt MT25035_PartC_results.csv
+
+echo "Compiling programs..."
 gcc MT25035_PartC_A.c -o a.out
 gcc MT25035_PartC_B.c -o b.out -pthread
+echo "Compilation done"
+echo "=================================="
 
 if ! command -v /usr/bin/time >/dev/null 2>&1; then
   echo "/usr/bin/time not found"; exit 1
@@ -13,8 +17,8 @@ CSV="MT25035_PartC_results.csv"
 echo "components,program,function,cpu_percent,mem_mb,io_kbps,time_sec" > "$CSV"
 
 measure() {
-  TYPE=$1    # process or thread
-  MODE=$2    # cpu mem io
+  TYPE=$1
+  MODE=$2
   NCOMP=$3
 
   if [ "$TYPE" = "process" ]; then
@@ -26,20 +30,40 @@ measure() {
   exe_name=$(basename "$EXE")
   tf=$(mktemp)
 
+  # Start the program
   taskset -c 0,1 /usr/bin/time -f "%e" "$EXE" "$MODE" "$NCOMP" 2> "$tf" &
   PID=$!
+  sleep 0.5
 
   sum_cpu=0; sum_mem=0; sum_io=0; cnt=0
 
   while kill -0 "$PID" 2>/dev/null; do
-    cpu=$(top -b -n1 | awk -v exe="$exe_name" '$0 ~ exe {c+=$9} END {print c+0}')
-    mem=$(top -b -n1 | awk -v exe="$exe_name" '$0 ~ exe {m+=$6} END {print m+0}')
-    io=$(iostat -dx 1 1 2>/dev/null | awk '$1=="sda" {print $9+0}')
-    sum_cpu=$(awk -v a="$sum_cpu" -v b="$cpu" 'BEGIN{printf "%.6f", a+b}')
-    sum_mem=$(awk -v a="$sum_mem" -v b="$mem" 'BEGIN{printf "%.0f", a+b}')
-    sum_io=$(awk -v a="$sum_io" -v b="$io" 'BEGIN{printf "%.6f", a+b}')
+    # 1. CPU: Sum %CPU for all threads/processes matching the name
+    cpu=$(top -b -n 1 -H | grep "$exe_name" | awk '{s+=$9} END {print s+0}')
+    
+    # 2. Memory: Sum RES column and handle 'm' or 'g' suffixes
+    mem_kb=$(top -b -n 1 | grep "$exe_name" | awk '
+    {
+      val=$6
+      if(val ~ /m$/) val *= 1024
+      else if(val ~ /g$/) val *= 1048576
+      s += val
+    } END {print s+0}')
+    
+    # 3. IO: Use 'iostat -d -k 1 2' to get the current speed (second report)
+    # Sums Read + Write for all 'sd' devices (sda, sdb, sdc, etc.)
+    io=$(iostat -d -k 1 2 | awk '
+      /^Device/ { report++ }
+      report==2 && $1 ~ /^sd/ { total += $3 + $4 }
+      END { print total+0 }
+    ')
+
+    sum_cpu=$(awk -v a="$sum_cpu" -v b="$cpu" 'BEGIN{print a+b}')
+    sum_mem=$(awk -v a="$sum_mem" -v b="$mem_kb" 'BEGIN{print a+b}')
+    sum_io=$(awk -v s="$sum_io" -v b="$io" 'BEGIN{print s+b}')
+    
     cnt=$((cnt+1))
-    sleep 1
+    # No sleep 1 here; iostat 1 2 already provides a 1-second delay
   done
 
   wait "$PID" 2>/dev/null
@@ -55,17 +79,17 @@ measure() {
     avg_cpu="0.00"; avg_mem_mb="0.00"; avg_io="0.00"
   fi
 
-  printf "%-6s %-8s %-8s %-8s %-8s\n" "${PROG}+${MODE}" "${avg_cpu}" "${avg_mem_mb}MB" "${avg_io}" "${elapsed}"
+  printf "%-10s %-8s %-10s %-8s %-8s\n" "${PROG}+${MODE}" "${avg_cpu}" "${avg_mem_mb}MB" "${avg_io}" "${elapsed}"
   echo "${NCOMP},${PROG},${MODE},${avg_cpu},${avg_mem_mb},${avg_io},${elapsed}" >> "$CSV"
 }
 
-
 printf "\ncomponents=%s\n" "2"
-printf "%-6s %-8s %-8s %-8s %-8s\n" "Prog" "CPU%" "Mem" "IO" "Time(s)"
-echo "----------------------------------------------"
+printf "%-10s %-8s %-10s %-8s %-8s\n" "Prog" "CPU%" "Mem" "IO" "Time(s)"
+echo "------------------------------------------------------------"
 for m in cpu mem io; do
-measure process $m 2
-measure thread  $m 2
+  measure process $m 2
+  measure thread  $m 2
 done
 
+echo ""
 echo "Results saved to $CSV"
