@@ -4,8 +4,8 @@
 rm -f a.out b.out try_thread.txt try_proc.txt results.csv
 
 echo "Compiling programs..."
-gcc MT25035_PartD_A.c -o a.out
-gcc MT25035_PartD_B.c -o b.out -pthread
+gcc MT25035_Part_D_Program_A.c -o a.out
+gcc MT25035_Part_D_Program_B.c -o b.out -pthread
 echo "Compilation done"
 echo "=================================="
 
@@ -14,7 +14,7 @@ if ! command -v /usr/bin/time >/dev/null 2>&1; then
     exit 1
 fi
 
-CSV_FILE="MT25035_PartD_results.csv"
+CSV_FILE="MT25035_Part_D_results.csv"
 echo "components,program,function,cpu_percent,mem_mb,io_kbps,time_sec" > "$CSV_FILE"
 
 measure() {
@@ -124,5 +124,5 @@ done
 echo
 echo "Results saved to $CSV_FILE"
 echo "Making Plots..."
-bash ./MT25035_PartD_plots.sh
+bash ./MT25035_Part_D_plots.sh
 rm -f a.out b.out try_thread.txt try_proc.txt

@@ -4,8 +4,8 @@
 rm -f a.out b.out try_thread.txt try_proc.txt MT25035_PartC_results.csv
 
 echo "Compiling programs..."
-gcc MT25035_PartC_A.c -o a.out
-gcc MT25035_PartC_B.c -o b.out -pthread
+gcc MT25035_Part_C_Program_A.c -o a.out
+gcc MT25035_Part_C_Program_B.c -o b.out -pthread
 echo "Compilation done"
 echo "=================================="
 
@@ -13,7 +13,7 @@ if ! command -v /usr/bin/time >/dev/null 2>&1; then
   echo "/usr/bin/time not found"; exit 1
 fi
 
-CSV="MT25035_PartC_results.csv"
+CSV="MT25035_Part_C_results.csv"
 echo "components,program,function,cpu_percent,mem_mb,io_kbps,time_sec" > "$CSV"
 
 measure() {
@@ -30,7 +30,6 @@ measure() {
   exe_name=$(basename "$EXE")
   tf=$(mktemp)
 
-  # Start the program
   taskset -c 0,1 /usr/bin/time -f "%e" "$EXE" "$MODE" "$NCOMP" 2> "$tf" &
   PID=$!
   sleep 0.5
@@ -38,10 +37,10 @@ measure() {
   sum_cpu=0; sum_mem=0; sum_io=0; cnt=0
 
   while kill -0 "$PID" 2>/dev/null; do
-    # 1. CPU: Sum %CPU for all threads/processes matching the name
+    #CPU:Sum %CPU for all threads/processes matching the name
     cpu=$(top -b -n 1 -H | grep "$exe_name" | awk '{s+=$9} END {print s+0}')
     
-    # 2. Memory: Sum RES column and handle 'm' or 'g' suffixes
+    # Memory:Sum RES column and handle 'm' or 'g' suffixes
     mem_kb=$(top -b -n 1 | grep "$exe_name" | awk '
     {
       val=$6
@@ -50,8 +49,7 @@ measure() {
       s += val
     } END {print s+0}')
     
-    # 3. IO: Use 'iostat -d -k 1 2' to get the current speed (second report)
-    # Sums Read + Write for all 'sd' devices (sda, sdb, sdc, etc.)
+    # IO: Sum of read and write kB/s for devices starting with 'sd'
     io=$(iostat -d -k 1 2 | awk '
       /^Device/ { report++ }
       report==2 && $1 ~ /^sd/ { total += $3 + $4 }
@@ -63,7 +61,6 @@ measure() {
     sum_io=$(awk -v s="$sum_io" -v b="$io" 'BEGIN{print s+b}')
     
     cnt=$((cnt+1))
-    # No sleep 1 here; iostat 1 2 already provides a 1-second delay
   done
 
   wait "$PID" 2>/dev/null

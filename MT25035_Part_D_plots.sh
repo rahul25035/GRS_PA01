@@ -1,10 +1,9 @@
 #!/bin/bash
-# MT25035_PartD_plots.sh
+# MT25035_Part_D_plots.sh
 # Minimal script: makes 4 plots (cpu, mem, io, time) vs number of components.
-# Expects MT25035_PartD_results.csv in the same folder.
+# Expects MT25035_Part_D_results.csv in the same folder.
 
-CSV="MT25035_PartD_results.csv"
-
+CSV="MT25035_Part_D_results.csv"
 if [ ! -f "$CSV" ]; then
   echo "Error: '$CSV' not found in current directory."
   exit 1
