@@ -32,25 +32,25 @@ set style data linespoints
 set pointsize 1.0
 set key left top
 
-set output "cpu_vs_components.png"
+set output "MT25035_Part_D_cpu_vs_components.png"
 set ylabel "CPU (%)"
 set title "CPU vs Components (function = cpu)"
 plot "cpu_A.dat" using 1:2 title "A (process)" lw 2 pt 7, \
      "cpu_B.dat" using 1:2 title "B (thread)" lw 2 pt 5
 
-set output "mem_vs_components.png"
+set output "MT25035_Part_D_mem_vs_components.png"
 set ylabel "Memory (MB)"
 set title "Memory vs Components (function = mem)"
 plot "mem_A.dat" using 1:2 title "A (process)" lw 2 pt 7, \
      "mem_B.dat" using 1:2 title "B (thread)" lw 2 pt 5
 
-set output "io_vs_components.png"
+set output "MT25035_Part_D_io_vs_components.png"
 set ylabel "IO (KB/s)"
 set title "IO vs Components (function = io)"
 plot "io_A.dat" using 1:2 title "A (process)" lw 2 pt 7, \
      "io_B.dat" using 1:2 title "B (thread)" lw 2 pt 5
 
-set output "time_vs_components.png"
+set output "MT25035_Part_D_time_vs_components.png"
 set ylabel "Time (sec)"
 set title "Execution time vs Components (function = cpu)"
 plot "time_A.dat" using 1:2 title "A (process)" lw 2 pt 7, \
